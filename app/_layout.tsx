@@ -8,6 +8,7 @@ import {
 } from "react-native";
 import { SafeAreaProvider, SafeAreaView } from "react-native-safe-area-context";
 import DestinationContext from "../contexts/DestinationContext";
+import GeneralContext from "../contexts/GeneralContext";
 import TripContext from "../contexts/TripContext";
 import UserContext from "../contexts/UserContext";
 
@@ -36,11 +37,13 @@ export default function RootLayout() {
         style={{ flex: 1, backgroundColor: isDark ? "#000" : "#fff" }}
       >
         <UserContext>
-          <TripContext>
-            <DestinationContext>
-              <Stack screenOptions={{ headerShown: false }} />
-            </DestinationContext>
-          </TripContext>
+          <GeneralContext>
+            <TripContext>
+              <DestinationContext>
+                <Stack screenOptions={{ headerShown: false }} />
+              </DestinationContext>
+            </TripContext>
+          </GeneralContext>
         </UserContext>
       </SafeAreaView>
     </SafeAreaProvider>

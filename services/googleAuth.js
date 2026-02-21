@@ -31,7 +31,7 @@ export const useGoogleAuth = () => {
     webClientId: WEB,
     scopes: ["openid", "profile", "email"],
     responseType: "id_token",
-    redirectUri,
+    redirectUri: "https://auth.expo.io/@nejan_s/trip-app",
   });
 
   const getGoogleTokenFromResponse = () => {
@@ -45,3 +45,4 @@ export const useGoogleAuth = () => {
 
   return { request, response, promptAsync, getGoogleTokenFromResponse };
 };
+//this is the last edit

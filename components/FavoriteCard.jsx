@@ -7,9 +7,10 @@ const FavoriteCard = ({ destination }) => {
   const { removeFromFavorites } = useDestinationContext();
 
   const openDetails = () => {
+    // ✅ Navigation fixed to use ID
     router.push({
       pathname: "dashboard/DetailsPage",
-      params: { destination: JSON.stringify(destination) },
+      params: { id: destination.id },
     });
   };
 

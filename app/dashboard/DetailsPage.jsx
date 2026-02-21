@@ -3,10 +3,12 @@ import * as Location from "expo-location";
 import { router, useLocalSearchParams } from "expo-router";
 import { useEffect, useRef, useState } from "react";
 import {
+  Animated,
   Dimensions,
   FlatList,
   Image,
   Modal,
+  PanResponder,
   ScrollView,
   StyleSheet,
   Text,
@@ -15,40 +17,55 @@ import {
 } from "react-native";
 import MapView, { Marker, PROVIDER_GOOGLE } from "react-native-maps";
 import BackButton from "../../components/BackButton";
+import { useDestinationContext } from "../../contexts/DestinationContext";
 
-const { width } = Dimensions.get("window");
+const { width, height } = Dimensions.get("window");
 
 const DetailsPage = () => {
-  const params = useLocalSearchParams();
-  const destination = JSON.parse(params.destination);
+  const { id } = useLocalSearchParams();
+  const { destinations } = useDestinationContext();
+  const destination = destinations.find((d) => String(d.id) === String(id));
 
-  // ✅ WORKING IMAGES
-  const images = [
-    { id: "1", uri: "https://picsum.photos/900/600?random=1" },
-    { id: "2", uri: "https://picsum.photos/900/600?random=2" },
-    { id: "3", uri: "https://picsum.photos/900/600?random=3" },
-    { id: "4", uri: "https://picsum.photos/900/600?random=4" },
-    { id: "5", uri: "https://picsum.photos/900/600?random=5" },
-    { id: "6", uri: "https://picsum.photos/900/600?random=6" },
-    { id: "7", uri: "https://picsum.photos/900/600?random=7" },
-    { id: "8", uri: "https://picsum.photos/900/600?random=8" },
-    { id: "9", uri: "https://picsum.photos/900/600?random=9" },
-    { id: "10", uri: "https://picsum.photos/900/600?random=10" },
-  ];
-
-  const routeToGallery = () => {
-    router.push({
-      pathname: "/dashboard/GalleryPage",
-      params: { images: JSON.stringify(images) },
-    });
-  };
-
-  const [sheet, setSheet] = useState(null); // weather | todo
+  // --- STATE ---
+  const [sheet, setSheet] = useState(null); // 'weather' | 'todo'
+  const [selectedPopup, setSelectedPopup] = useState(null); // { images: [], index: 0 }
   const [permissionGranted, setPermissionGranted] = useState(false);
   const [userLocation, setUserLocation] = useState(null);
 
+  // --- REFS & ANIMATION ---
   const mapRef = useRef(null);
+  const panY = useRef(new Animated.Value(height)).current;
 
+  // --- BOTTOM SHEET DRAG LOGIC ---
+  useEffect(() => {
+    if (sheet) {
+      Animated.spring(panY, { toValue: 0, useNativeDriver: true }).start();
+    }
+  }, [sheet]);
+
+  const closeSheet = () => {
+    Animated.timing(panY, {
+      toValue: height,
+      duration: 300,
+      useNativeDriver: true,
+    }).start(() => setSheet(null));
+  };
+
+  const panResponder = useRef(
+    PanResponder.create({
+      onStartShouldSetPanResponder: () => true,
+      onPanResponderMove: (_, gesture) => {
+        if (gesture.dy > 0) panY.setValue(gesture.dy);
+      },
+      onPanResponderRelease: (_, gesture) => {
+        if (gesture.dy > 150 || gesture.vy > 0.5) closeSheet();
+        else
+          Animated.spring(panY, { toValue: 0, useNativeDriver: true }).start();
+      },
+    }),
+  ).current;
+
+  // --- LOCATION LOGIC ---
   useEffect(() => {
     (async () => {
       const { status } = await Location.requestForegroundPermissionsAsync();
@@ -63,57 +80,52 @@ const DetailsPage = () => {
     })();
   }, []);
 
-  const focusOnDestination = () => {
-    mapRef.current?.animateToRegion(
-      {
-        latitude: destination.location.latitude,
-        longitude: destination.location.longitude,
-        latitudeDelta: 0.01,
-        longitudeDelta: 0.01,
-      },
-      900,
+  if (!destination)
+    return (
+      <View style={styles.center}>
+        <Text>Loading...</Text>
+      </View>
     );
-  };
 
-  const openInMap = () => {
-    router.push({
-      pathname: "/dashboard/MapPage",
-      params: {
-        userLocation: JSON.stringify(userLocation),
-        destinationLocation: JSON.stringify(destination),
-        userLocationPermission: permissionGranted,
-      },
-    });
-  };
+  const images = destination.image_array || [];
 
   return (
     <>
       <ScrollView style={styles.container} showsVerticalScrollIndicator={false}>
         <BackButton light />
-        {/* IMAGE SLIDER */}
+
+        {/* HERO IMAGE SLIDER */}
         <View>
           <FlatList
             data={images}
             horizontal
             pagingEnabled
             showsHorizontalScrollIndicator={false}
-            keyExtractor={(item) => item.id}
+            keyExtractor={(item) => item.id.toString()}
             renderItem={({ item }) => (
-              <Image source={{ uri: item.uri }} style={styles.image} />
+              <Image source={{ uri: item.url }} style={styles.heroImage} />
             )}
           />
-
-          <TouchableOpacity style={styles.galleryBtn} onPress={routeToGallery}>
+          <TouchableOpacity
+            style={styles.galleryBtn}
+            onPress={() =>
+              router.push({
+                pathname: "/dashboard/GalleryPage",
+                params: { images: JSON.stringify(images) },
+              })
+            }
+          >
             <Ionicons name="images-outline" size={18} color="#fff" />
             <Text style={styles.galleryText}>View gallery</Text>
           </TouchableOpacity>
         </View>
 
-        {/* DETAILS */}
+        {/* DETAILS SECTION */}
         <View style={styles.content}>
           <Text style={styles.title}>{destination.name}</Text>
-
-          <Text style={styles.desc}>{destination.longDescription}</Text>
+          <Text style={styles.desc}>
+            {destination.long_description || destination.longDescription}
+          </Text>
 
           <View style={styles.actionRow}>
             <TouchableOpacity
@@ -123,7 +135,6 @@ const DetailsPage = () => {
               <Ionicons name="partly-sunny-outline" size={22} color="#0F766E" />
               <Text style={styles.actionText}>Weather</Text>
             </TouchableOpacity>
-
             <TouchableOpacity
               style={styles.actionCard}
               onPress={() => setSheet("todo")}
@@ -134,186 +145,200 @@ const DetailsPage = () => {
           </View>
         </View>
 
-        {/* MAP */}
+        {/* MAP SECTION */}
         <View style={styles.mapWrap}>
           <MapView
             ref={mapRef}
             provider={PROVIDER_GOOGLE}
-            style={{ flex: 1 }}
-            showsUserLocation={permissionGranted}
+            style={StyleSheet.absoluteFill}
             initialRegion={{
-              latitude: destination.location.latitude,
-              longitude: destination.location.longitude,
+              ...destination.location,
               latitudeDelta: 0.02,
               longitudeDelta: 0.02,
             }}
           >
-            <Marker
-              coordinate={{
-                latitude: destination.location.latitude,
-                longitude: destination.location.longitude,
-              }}
-            />
+            <Marker coordinate={destination.location} />
           </MapView>
-
           <TouchableOpacity
             style={styles.focusBtn}
-            onPress={focusOnDestination}
+            onPress={() =>
+              mapRef.current?.animateToRegion(
+                {
+                  ...destination.location,
+                  latitudeDelta: 0.01,
+                  longitudeDelta: 0.01,
+                },
+                900,
+              )
+            }
           >
-            <Ionicons name="locate-outline" size={18} color="#fff" />
+            <Ionicons name="locate" size={22} color="#fff" />
           </TouchableOpacity>
-
-          <TouchableOpacity style={styles.openMapBtn} onPress={openInMap}>
-            <Ionicons name="map-outline" size={18} color="#fff" />
-            <Text style={styles.openMapText}>Open in map</Text>
+          <TouchableOpacity
+            style={styles.openMapBtnPremium}
+            onPress={() =>
+              router.push({
+                pathname: "/dashboard/MapPage",
+                params: {
+                  userLocation: JSON.stringify(userLocation),
+                  destinationLocation: JSON.stringify(destination),
+                  userLocationPermission: String(permissionGranted),
+                },
+              })
+            }
+          >
+            <Ionicons name="map-outline" size={20} color="#fff" />
+            <Text style={styles.openMapText}>View on Map</Text>
           </TouchableOpacity>
         </View>
       </ScrollView>
 
-      {/* BOTTOM SHEET */}
-      <Modal visible={!!sheet} transparent animationType="slide">
+      {/* BOTTOM SHEET MODAL */}
+      {/* BOTTOM SHEET MODAL */}
+      <Modal visible={!!sheet} transparent animationType="none">
         <View style={styles.overlay}>
+          {/* Tapping this area closes the sheet */}
           <TouchableOpacity
             style={{ flex: 1 }}
-            onPress={() => setSheet(null)}
+            activeOpacity={1}
+            onPress={closeSheet}
           />
+
+          <Animated.View
+            style={[styles.sheet, { transform: [{ translateY: panY }] }]}
+            {...panResponder.panHandlers}
+          >
+            {/* The handle also acts as a touch target for dragging */}
+            <View style={styles.dragHandle} />
+
+            {/* Use a ScrollView inside the Animated View for long content */}
+            <ScrollView
+              showsVerticalScrollIndicator={false}
+              contentContainerStyle={{ paddingBottom: 60 }}
+              // This prop allows the ScrollView to work nicely with PanResponder
+              bounces={true}
+            >
+              {sheet === "weather" && (
+                <View style={styles.weatherContainer}>
+                  <Text style={styles.sheetTitle}>Weather overview</Text>
+                  <Ionicons
+                    name="sunny"
+                    size={80}
+                    color="#F59E0B"
+                    style={{ marginVertical: 20 }}
+                  />
+                  <Text style={styles.temp}>27°C</Text>
+                  <Text style={styles.weatherNote}>Warm and sunny</Text>
+
+                  {/* Added more content to test scrolling */}
+                  <View style={styles.weatherDetailsRow}>
+                    <Text style={styles.weatherDetailText}>Humidity: 65%</Text>
+                    <Text style={styles.weatherDetailText}>Wind: 12km/h</Text>
+                  </View>
+                </View>
+              )}
+
+              {sheet === "todo" && (
+                <View onStartShouldSetResponder={() => true}>
+                  <Text style={styles.sheetTitle}>Things to do</Text>
+                  {destination.things_to_do?.map((activity) => (
+                    <View key={activity.id} style={styles.todoItem}>
+                      <Text style={styles.todoItemTitle}>
+                        ✨ {activity.topic}
+                      </Text>
+                      <Text style={styles.todoItemDesc}>
+                        {activity.description}
+                      </Text>
+
+                      <FlatList
+                        data={activity.image_array}
+                        horizontal
+                        showsHorizontalScrollIndicator={false}
+                        keyExtractor={(img) => img.id.toString()}
+                        contentContainerStyle={{ gap: 10, marginTop: 12 }}
+                        renderItem={({ item, index }) => (
+                          <TouchableOpacity
+                            onPress={() =>
+                              setSelectedPopup({
+                                images: activity.image_array,
+                                index,
+                              })
+                            }
+                          >
+                            <Image
+                              source={{ uri: item.url }}
+                              style={styles.todoThumb}
+                            />
+                          </TouchableOpacity>
+                        )}
+                      />
+                    </View>
+                  ))}
+                </View>
+              )}
+            </ScrollView>
+          </Animated.View>
         </View>
+      </Modal>
 
-        <View style={styles.sheet}>
-          <View style={styles.drag} />
+      {/* FULL SCREEN IMAGE POPUP */}
+      <Modal visible={!!selectedPopup} transparent animationType="fade">
+        <View style={styles.popupContainer}>
+          <TouchableOpacity
+            style={styles.closePopup}
+            onPress={() => setSelectedPopup(null)}
+          >
+            <Ionicons name="close-circle" size={40} color="#fff" />
+          </TouchableOpacity>
 
-          {sheet === "weather" && (
-            <>
-              <Text style={styles.sheetTitle}>Weather overview</Text>
-
-              <View style={styles.weatherBig}>
-                <Text style={styles.temp}>27°C</Text>
-                <Text style={styles.weatherNote}>
-                  Warm and sunny throughout the day
-                </Text>
+          <FlatList
+            data={selectedPopup?.images}
+            horizontal
+            pagingEnabled
+            initialScrollIndex={selectedPopup?.index}
+            getItemLayout={(_, index) => ({
+              length: width,
+              offset: width * index,
+              index,
+            })}
+            keyExtractor={(item) => item.id.toString()}
+            renderItem={({ item }) => (
+              <View style={styles.popupImageWrapper}>
+                <Image
+                  source={{ uri: item.url }}
+                  style={styles.fullImage}
+                  resizeMode="contain"
+                />
               </View>
-
-              <Text style={styles.sectionText}>
-                Expect clear skies during mornings and slightly cooler evenings.
-                Light winds may occur near elevated areas.
-              </Text>
-
-              <View style={styles.weatherRow}>
-                <Text>Humidity</Text>
-                <Text>65%</Text>
-              </View>
-
-              <View style={styles.weatherRow}>
-                <Text>Wind speed</Text>
-                <Text>12 km/h</Text>
-              </View>
-
-              <View style={styles.weatherRow}>
-                <Text>Rain chance</Text>
-                <Text>10%</Text>
-              </View>
-
-              <View style={styles.tipBox}>
-                <Text style={styles.tipTitle}>Travel tip</Text>
-                <Text style={styles.tipText}>
-                  Carry a light jacket for evening hours and start hikes early
-                  morning to avoid midday heat.
-                </Text>
-              </View>
-            </>
-          )}
-
-          {sheet === "todo" && (
-            <>
-              <Text style={styles.sheetTitle}>Things to do</Text>
-
-              <Text style={styles.sectionText}>
-                This area offers a mix of nature, adventure, and relaxing
-                experiences suitable for all travelers.
-              </Text>
-
-              <View style={styles.todoItem}>
-                <Text style={styles.todoTitle}>🥾 Hiking trails</Text>
-                <Text style={styles.todoText}>
-                  Explore scenic trails with panoramic mountain views and fresh
-                  air.
-                </Text>
-              </View>
-
-              <View style={styles.todoItem}>
-                <Text style={styles.todoTitle}>📸 Photography</Text>
-                <Text style={styles.todoText}>
-                  Ideal for sunrise, fog landscapes, and wide-angle shots.
-                </Text>
-              </View>
-
-              <View style={styles.todoItem}>
-                <Text style={styles.todoTitle}>🌄 Viewpoints</Text>
-                <Text style={styles.todoText}>
-                  Visit famous viewpoints located within short travel distance.
-                </Text>
-              </View>
-
-              <View style={styles.todoItem}>
-                <Text style={styles.todoTitle}>🍵 Cafés & local food</Text>
-                <Text style={styles.todoText}>
-                  Enjoy local tea, snacks, and peaceful hillside cafés.
-                </Text>
-              </View>
-            </>
-          )}
+            )}
+          />
         </View>
       </Modal>
     </>
   );
 };
 
-export default DetailsPage;
-
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: "#fff" },
-
-  image: {
-    width: width,
-    height: 300,
-  },
-
+  center: { flex: 1, justifyContent: "center", alignItems: "center" },
+  heroImage: { width: width, height: 350 },
   galleryBtn: {
     position: "absolute",
     bottom: 16,
     right: 16,
     backgroundColor: "rgba(0,0,0,0.7)",
     flexDirection: "row",
+    alignItems: "center",
     gap: 6,
     paddingHorizontal: 14,
     paddingVertical: 8,
     borderRadius: 999,
   },
-
   galleryText: { color: "#fff", fontWeight: "700" },
-
-  content: {
-    padding: 18,
-    gap: 12,
-  },
-
-  title: {
-    fontSize: 26,
-    fontWeight: "900",
-  },
-
-  desc: {
-    fontSize: 14.5,
-    color: "#475569",
-    lineHeight: 22,
-    fontWeight: "600",
-  },
-
-  actionRow: {
-    flexDirection: "row",
-    gap: 12,
-  },
-
+  content: { padding: 18, gap: 10 },
+  title: { fontSize: 26, fontWeight: "900", color: "#0F172A" },
+  desc: { fontSize: 15, color: "#475569", lineHeight: 22, fontWeight: "500" },
+  actionRow: { flexDirection: "row", gap: 12, marginTop: 10 },
   actionCard: {
     flex: 1,
     backgroundColor: "#F8FAFC",
@@ -321,127 +346,108 @@ const styles = StyleSheet.create({
     paddingVertical: 14,
     alignItems: "center",
     borderWidth: 1,
-    borderColor: "#E5E7EB",
+    borderColor: "#E2E8F0",
   },
-
-  actionText: { marginTop: 6, fontWeight: "700" },
-
+  actionText: { marginTop: 6, fontWeight: "700", color: "#0F172A" },
   mapWrap: {
-    height: 280,
+    height: 250,
     margin: 18,
-    borderRadius: 18,
+    borderRadius: 20,
     overflow: "hidden",
+    position: "relative",
     borderWidth: 1,
-    borderColor: "#E5E7EB",
+    borderColor: "#E2E8F0",
   },
-
   focusBtn: {
     position: "absolute",
     top: 12,
     right: 12,
     backgroundColor: "#0F766E",
-    padding: 10,
-    borderRadius: 999,
+    width: 46,
+    height: 46,
+    justifyContent: "center",
+    alignItems: "center",
+    borderRadius: 23,
+    elevation: 5,
+    zIndex: 10,
   },
-
-  openMapBtn: {
+  openMapBtnPremium: {
     position: "absolute",
-    bottom: 14,
-    alignSelf: "center",
+    bottom: 16,
+    left: 16,
+    right: 16,
     backgroundColor: "#0F766E",
     flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
     gap: 8,
-    paddingHorizontal: 18,
-    paddingVertical: 10,
-    borderRadius: 999,
+    paddingVertical: 12,
+    borderRadius: 14,
+    elevation: 6,
   },
-
-  openMapText: { color: "#fff", fontWeight: "700" },
-
+  openMapText: { color: "#fff", fontSize: 15, fontWeight: "800" },
   overlay: {
     flex: 1,
     backgroundColor: "rgba(0,0,0,0.4)",
+    justifyContent: "flex-end",
   },
-
   sheet: {
-    height: "70%",
+    height: height * 0.75,
     backgroundColor: "#fff",
-    borderTopLeftRadius: 28,
-    borderTopRightRadius: 28,
+    borderTopLeftRadius: 32,
+    borderTopRightRadius: 32,
     padding: 20,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: -4 },
+    shadowOpacity: 0.1,
+    shadowRadius: 10,
+    elevation: 20,
   },
-
-  drag: {
+  dragHandle: {
     width: 40,
-    height: 4,
-    backgroundColor: "#CBD5E1",
-    borderRadius: 999,
+    height: 5,
+    backgroundColor: "#E2E8F0",
+    borderRadius: 10,
     alignSelf: "center",
-    marginBottom: 14,
+    marginBottom: 15,
   },
-
   sheetTitle: {
-    fontSize: 20,
-    fontWeight: "800",
-    marginBottom: 12,
-  },
-
-  weatherBig: {
-    alignItems: "center",
-    marginBottom: 14,
-  },
-
-  temp: {
-    fontSize: 42,
+    fontSize: 22,
     fontWeight: "900",
+    color: "#0F172A",
+    marginBottom: 20,
   },
-
-  weatherNote: {
-    color: "#64748B",
-  },
-
-  sectionText: {
-    color: "#475569",
-    lineHeight: 20,
-    marginBottom: 12,
-  },
-
-  weatherRow: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    paddingVertical: 10,
-    borderBottomWidth: 1,
-    borderColor: "#E5E7EB",
-  },
-
-  tipBox: {
-    marginTop: 16,
-    backgroundColor: "#ECFDF5",
-    padding: 14,
-    borderRadius: 14,
-  },
-
-  tipTitle: {
-    fontWeight: "800",
-    marginBottom: 4,
-  },
-
-  tipText: {
-    color: "#065F46",
-  },
-
   todoItem: {
-    marginBottom: 16,
+    marginBottom: 25,
+    borderBottomWidth: 1,
+    borderBottomColor: "#F1F5F9",
+    paddingBottom: 20,
   },
-
-  todoTitle: {
-    fontSize: 16,
-    fontWeight: "800",
-    marginBottom: 4,
-  },
-
-  todoText: {
-    color: "#475569",
+  todoItemTitle: { fontSize: 18, fontWeight: "800", color: "#1E293B" },
+  todoItemDesc: {
+    color: "#64748B",
+    fontSize: 14,
+    marginTop: 4,
     lineHeight: 20,
   },
+  todoThumb: {
+    width: 130,
+    height: 170,
+    borderRadius: 16,
+    backgroundColor: "#F1F5F9",
+  },
+  weatherContainer: { alignItems: "center", paddingTop: 20 },
+  temp: { fontSize: 64, fontWeight: "900", color: "#0F172A" },
+  weatherNote: { fontSize: 18, color: "#64748B", fontWeight: "600" },
+  popupContainer: { flex: 1, backgroundColor: "rgba(0,0,0,0.95)" },
+  closePopup: { position: "absolute", top: 50, right: 20, zIndex: 100 },
+  popupImageWrapper: {
+    width: width,
+    height: height,
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  fullImage: { width: width * 0.95, height: height * 0.7 },
 });
+
+export default DetailsPage;

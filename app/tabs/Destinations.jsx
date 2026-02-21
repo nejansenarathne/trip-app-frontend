@@ -2,6 +2,7 @@ import { Ionicons } from "@expo/vector-icons";
 import { router } from "expo-router";
 import {
   FlatList,
+  Image,
   ImageBackground,
   ScrollView,
   StyleSheet,
@@ -12,12 +13,17 @@ import {
 import DestinationCard from "../../components/DestinationCard";
 import HorizontalTag from "../../components/HorizontalTag";
 import { useDestinationContext } from "../../contexts/DestinationContext";
+import { useGeneralContext } from "../../contexts/GeneralContext";
+import { useUserContext } from "../../contexts/UserContext";
 
 const CARD_WIDTH = 230;
 
 const Destinations = () => {
-  const { destinations, categories, filteredDestinations, selectCategory } =
+  const { user } = useUserContext();
+
+  const { destinations, filteredDestinations, selectCategory } =
     useDestinationContext();
+  const { categories } = useGeneralContext();
 
   const goToSearch = (query = "") => {
     router.push({
@@ -52,20 +58,23 @@ const Destinations = () => {
           </View>
 
           <View style={{ flexDirection: "row", gap: 10 }}>
-            <TouchableOpacity style={styles.iconBtn} activeOpacity={0.8}>
-              <Ionicons name="options-outline" size={22} color="#111827" />
-            </TouchableOpacity>
-
             <TouchableOpacity
               style={styles.profileBtn}
               activeOpacity={0.85}
               onPress={openProfile}
             >
-              <Ionicons
-                name="person-circle-outline"
-                size={30}
-                color="#0F766E"
-              />
+              {user?.profile_picture ? (
+                <Image
+                  source={{ uri: user.profile_picture }}
+                  style={{ width: 34, height: 34, borderRadius: 17 }}
+                />
+              ) : (
+                <Ionicons
+                  name="person-circle-outline"
+                  size={30}
+                  color="#0F766E"
+                />
+              )}
             </TouchableOpacity>
           </View>
         </View>
@@ -112,7 +121,7 @@ const Destinations = () => {
         <View style={styles.section}>
           <View style={styles.sectionRow}>
             <Text style={styles.sectionTitle}>Popular</Text>
-            <Text style={styles.sectionAction}>See all</Text>
+            {/* <Text style={styles.sectionAction}>See all</Text> */}
           </View>
 
           <FlatList

@@ -13,10 +13,12 @@ import {
   View,
 } from "react-native";
 import ProfPic from "../../assets/images/ProfPic.png";
+import { useGeneralContext } from "../../contexts/GeneralContext";
 import { useUserContext } from "../../contexts/UserContext";
 
 const ProfileView = () => {
   const { user, loadProfile, updateProfile, logout } = useUserContext();
+  const { avatars } = useGeneralContext();
 
   const [modalVisible, setModalVisible] = useState(false);
 
@@ -38,23 +40,7 @@ const ProfileView = () => {
     ? { uri: `${avatarUri}?v=${avatarBuster}` }
     : ProfPic;
 
-  const avatarOptions = useMemo(
-    () => [
-      { id: "1", url: "https://robohash.org/traveler1?set=set5" },
-      { id: "2", url: "https://robohash.org/explorer2?set=set5" },
-      { id: "3", url: "https://robohash.org/backpacker3?set=set5" },
-      { id: "4", url: "https://robohash.org/nomad4?set=set5" },
-      { id: "5", url: "https://robohash.org/pilot5?set=set5" },
-      { id: "6", url: "https://robohash.org/hiker6?set=set5" },
-      { id: "7", url: "https://robohash.org/surfer7?set=set5" },
-      { id: "8", url: "https://robohash.org/camper8?set=set5" },
-      { id: "9", url: "https://robohash.org/diver9?set=set5" },
-      { id: "10", url: "https://robohash.org/map10?set=set5" },
-      { id: "11", url: "https://robohash.org/sun11?set=set5" },
-      { id: "12", url: "https://robohash.org/sky12?set=set5" },
-    ],
-    [],
-  );
+  const avatarOptions = useMemo(() => avatars, [avatars]);
 
   const selectNewAvatar = async (imgUrl) => {
     setAvatarUri(imgUrl);
@@ -81,6 +67,9 @@ const ProfileView = () => {
           <Text style={{ fontWeight: "800" }}>Loading...</Text>
           <TouchableOpacity onPress={loadProfile} style={{ marginTop: 12 }}>
             <Text style={{ color: "#0F766E", fontWeight: "800" }}>Retry</Text>
+          </TouchableOpacity>
+          <TouchableOpacity onPress={handleLogout} style={{ marginTop: 12 }}>
+            <Text style={{ color: "#EF4444", fontWeight: "800" }}>Logout</Text>
           </TouchableOpacity>
         </View>
       </SafeAreaView>
@@ -196,15 +185,37 @@ const ProfileView = () => {
             <FlatList
               data={avatarOptions}
               numColumns={4}
-              keyExtractor={(item) => item.id}
-              renderItem={({ item }) => (
-                <TouchableOpacity
-                  onPress={() => selectNewAvatar(item.url)}
-                  activeOpacity={0.85}
-                >
-                  <Image source={{ uri: item.url }} style={styles.avatarItem} />
-                </TouchableOpacity>
-              )}
+              keyExtractor={(item, index) =>
+                item.id?.toString() || index.toString()
+              }
+              ListEmptyComponent={
+                <Text style={{ textAlign: "center", marginTop: 20 }}>
+                  No avatars found
+                </Text>
+              }
+              renderItem={({ item }) => {
+                // Determine the correct URI field based on what your console log showed
+                const imgUri = item.image_url || item.url;
+
+                return (
+                  <TouchableOpacity
+                    onPress={() => selectNewAvatar(imgUri)}
+                    activeOpacity={0.85}
+                    style={{ margin: 6 }}
+                  >
+                    <Image
+                      source={{ uri: imgUri }}
+                      style={[
+                        styles.avatarItem,
+                        { backgroundColor: "#F1F5F9" }, // Helps see the box if image is broken
+                      ]}
+                      onError={(e) =>
+                        console.log("Image Load Error:", e.nativeEvent.error)
+                      }
+                    />
+                  </TouchableOpacity>
+                );
+              }}
             />
           </View>
         </View>

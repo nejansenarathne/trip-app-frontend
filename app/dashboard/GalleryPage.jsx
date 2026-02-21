@@ -1,27 +1,3 @@
-// import { useLocalSearchParams } from 'expo-router';
-// import { FlatList, Image, StyleSheet, View } from 'react-native';
-
-// const GalleryPage = () => {
-
-//   const params = useLocalSearchParams()
-//   const images = JSON.parse(params.images)
-
-//   return (
-//     <View>
-//       <FlatList
-//         data={images}
-//         renderItem={({item}) => {
-//             return(<Image source={{uri: item.uri}} style={{ width: 200, height: 200 }} />)
-//         }}
-//       />
-//     </View>
-//   )
-// }
-
-// export default GalleryPage
-
-// const styles = StyleSheet.create({})
-
 import { Ionicons } from "@expo/vector-icons";
 import { useLocalSearchParams } from "expo-router";
 import { useState } from "react";
@@ -41,32 +17,30 @@ const IMAGE_SIZE = (width - 36) / 2;
 
 const GalleryPage = () => {
   const params = useLocalSearchParams();
-  const images = JSON.parse(params.images);
+  const images = params.images ? JSON.parse(params.images) : [];
 
   const [selectedIndex, setSelectedIndex] = useState(null);
 
   return (
     <View style={styles.container}>
       <BackButton light />
-      {/* GRID */}
       <FlatList
         data={images}
-        keyExtractor={(item) => item.id}
+        keyExtractor={(item) => item.id.toString()}
         numColumns={2}
         columnWrapperStyle={styles.row}
         contentContainerStyle={styles.list}
         showsVerticalScrollIndicator={false}
         renderItem={({ item, index }) => (
           <Pressable onPress={() => setSelectedIndex(index)}>
-            <Image source={{ uri: item.uri }} style={styles.image} />
+            {/* ✅ FIXED: Changed uri to url */}
+            <Image source={{ uri: item.url }} style={styles.image} />
           </Pressable>
         )}
       />
 
-      {/* FULLSCREEN VIEWER */}
       <Modal visible={selectedIndex !== null} transparent>
         <View style={styles.viewer}>
-          {/* close */}
           <Pressable
             style={styles.closeBtn}
             onPress={() => setSelectedIndex(null)}
@@ -84,9 +58,10 @@ const GalleryPage = () => {
               offset: width * index,
               index,
             })}
-            keyExtractor={(item) => item.id}
+            keyExtractor={(item) => item.id.toString()}
             renderItem={({ item }) => (
-              <Image source={{ uri: item.uri }} style={styles.fullImage} />
+              /* ✅ FIXED: Changed uri to url */
+              <Image source={{ uri: item.url }} style={styles.fullImage} />
             )}
           />
         </View>
@@ -97,44 +72,62 @@ const GalleryPage = () => {
 
 export default GalleryPage;
 
+// ... (Your styles remain exactly as provided)
+
 const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: "#FFFFFF",
   },
-
+  headerSpacer: {
+    paddingTop: 10,
+    zIndex: 10,
+  },
   list: {
     padding: 12,
+    paddingTop: 60, // Space for back button
   },
-
   row: {
     justifyContent: "space-between",
     marginBottom: 12,
   },
-
+  pressable: {
+    elevation: 3,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+  },
   image: {
     width: IMAGE_SIZE,
-    height: IMAGE_SIZE,
-    borderRadius: 14,
+    height: IMAGE_SIZE + 40, // Slightly portrait for a modern look
+    borderRadius: 16,
     backgroundColor: "#F1F5F9",
   },
-
+  empty: {
+    textAlign: "center",
+    marginTop: 50,
+    color: "#94a3b8",
+  },
   /* FULL SCREEN */
   viewer: {
     flex: 1,
-    backgroundColor: "black",
+    backgroundColor: "rgba(0,0,0,0.9)",
   },
-
-  fullImage: {
+  fullImageContainer: {
     width: width,
     height: height,
-    resizeMode: "contain",
+    justifyContent: "center",
+    alignItems: "center",
   },
-
+  fullImage: {
+    width: width,
+    height: height * 0.8,
+  },
   closeBtn: {
     position: "absolute",
     top: 50,
     right: 20,
-    zIndex: 10,
+    zIndex: 100,
   },
 });

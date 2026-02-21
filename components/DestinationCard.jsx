@@ -1,66 +1,17 @@
-// import { router } from 'expo-router';
-// import { Image, Pressable, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
-// import { useDestinationContext } from '../contexts/DestinationContext';
-
-// const DestinationCard = ({destination}) => {
-
-//   const {addToFavorites, removeFromFavorites, isFavorite} = useDestinationContext();
-//   const fav = isFavorite(destination);
-
-//   //This function will direct to the relavent details page when the card is pressed
-//   const directToDetails = () => {
-//     router.push({
-//       pathname: 'dashboard/DetailsPage',
-//       params: { destination: JSON.stringify(destination) }
-//     })
-//   }
-
-//   return (
-//     <TouchableOpacity onPress={directToDetails}>
-//       <View>
-
-//           <Text>{destination.name}</Text>
-
-//           {/* ---favorite button--- */}
-//           <Pressable style={{ padding: 10}} onPress={() => {
-//               fav? removeFromFavorites(destination) : addToFavorites(destination);
-//           }}>
-//             <Text>{fav ? '❤️' : '🤍'}</Text>
-//           </Pressable>
-
-//           <Image source={{uri: destination.imageUrl}} style={{width: '100%', height: 200}}/>
-//           <Text>{destination.shortDescription}</Text>
-
-//       </View>
-//     </TouchableOpacity>
-//   )
-// }
-
-// export default DestinationCard
-
-// const styles = StyleSheet.create({})
-
 import { Ionicons } from "@expo/vector-icons";
 import { router } from "expo-router";
-import {
-  Image,
-  Pressable,
-  StyleSheet,
-  Text,
-  TouchableOpacity,
-  View,
-} from "react-native";
+import { Image, StyleSheet, Text, TouchableOpacity, View } from "react-native";
 import { useDestinationContext } from "../contexts/DestinationContext";
 
 const DestinationCard = ({ destination, variant = "large" }) => {
-  const { addToFavorites, removeFromFavorites, isFavorite } =
+  const { addToFavorites, removeFromFavorites, isFavorite, toggleFavorite } =
     useDestinationContext();
-  const fav = isFavorite(destination);
+  const fav = isFavorite(destination.id);
 
   const directToDetails = () => {
     router.push({
       pathname: "dashboard/DetailsPage",
-      params: { destination: JSON.stringify(destination) },
+      params: { id: destination.id }, // Pass only the ID
     });
   };
 
@@ -75,7 +26,7 @@ const DestinationCard = ({ destination, variant = "large" }) => {
         <Image source={{ uri: destination.imageUrl }} style={styles.image} />
 
         {/* Favorite */}
-        <Pressable
+        {/* <Pressable
           onPress={() =>
             fav ? removeFromFavorites(destination) : addToFavorites(destination)
           }
@@ -86,7 +37,17 @@ const DestinationCard = ({ destination, variant = "large" }) => {
             size={18}
             color={fav ? "#E11D48" : "#0F172A"}
           />
-        </Pressable>
+        </Pressable> */}
+        <TouchableOpacity
+          onPress={() => toggleFavorite(destination)}
+          style={styles.favBtn} // Ensure you use your style here
+        >
+          <Ionicons
+            name={fav ? "heart" : "heart-outline"}
+            size={24}
+            color={fav ? "#E11D48" : "#0F766E"}
+          />
+        </TouchableOpacity>
 
         {/* Rating pill */}
         <View style={styles.ratingPill}>

@@ -1,6 +1,13 @@
-import { createContext, useContext, useEffect, useMemo, useState } from "react";
-import { getDestinationsAPI } from "../services/destinationService"; // <-- adjust path
-import { useUserContext } from "./UserContext"; // <-- adjust path to your auth/user context
+import { createContext, useContext, useEffect, useState } from "react";
+import { useGeneralContext } from "../contexts/GeneralContext";
+import {
+  addFavoriteAPI,
+  getDestinationsAPI,
+  getFavoriteDestinationsAPI,
+  removeFavoriteAPI,
+} from "../services/destinationService";
+
+import { useUserContext } from "./UserContext";
 
 export const destinationContext = createContext();
 export const useDestinationContext = () => useContext(destinationContext);
@@ -8,6 +15,7 @@ export const useDestinationContext = () => useContext(destinationContext);
 const DestinationContext = ({ children }) => {
   // ---- AUTH (needs accessToken + onUnauthorized refresh function) ----
   const { accessToken, onUnauthorized } = useUserContext();
+  const { categories } = useGeneralContext();
 
   // ---- STATE ----
   const [destinations, setDestinations] = useState([]);
@@ -16,19 +24,6 @@ const DestinationContext = ({ children }) => {
 
   // favorites
   const [favorites, setFavorites] = useState([]);
-
-  // categories + filtering
-  const categories = useMemo(
-    () => [
-      { id: 0, name: "All" },
-      { id: 1, name: "Beaches" },
-      { id: 2, name: "Hills" },
-      { id: 3, name: "Cultural" },
-      { id: 4, name: "Wildlife" },
-      { id: 5, name: "Historical" },
-    ],
-    [],
-  );
 
   const [selectCategory, setSelectCategory] = useState("All");
   const [filteredDestinations, setFilteredDestinations] = useState([]);
@@ -45,6 +40,9 @@ const DestinationContext = ({ children }) => {
   };
 
   // Map API -> UI shape (adjust field names to match your backend response)
+  // DestinationContext.js
+
+  // Inside your toUiDestination function
   const toUiDestination = (d) => ({
     id: d.id,
     name: d.name ?? d.title ?? "Unknown",
@@ -56,8 +54,10 @@ const DestinationContext = ({ children }) => {
       latitude: Number(d.latitude ?? d.location?.latitude ?? 0),
       longitude: Number(d.longitude ?? d.location?.longitude ?? 0),
     },
-    // IMPORTANT: your filter expects lowercase category values like "beaches"
     category: (d.category ?? "").toString().toLowerCase(),
+    // ✅ FIX: Include these so they aren't lost
+    image_array: d.image_array ?? [],
+    things_to_do: d.things_to_do ?? [],
   });
 
   // ---- FETCH from API ----
@@ -72,14 +72,24 @@ const DestinationContext = ({ children }) => {
     setDestinationsError("");
 
     try {
-      const data = await getDestinationsAPI(accessToken, onUnauthorized);
+      // 1. Fetch all destinations
+      const destData = await getDestinationsAPI(accessToken, onUnauthorized);
+      const destList = Array.isArray(destData)
+        ? destData
+        : destData?.results || [];
+      const mappedDestinations = destList.map(toUiDestination);
+      setDestinations(mappedDestinations);
 
-      // supports list OR paginated
-      const list = Array.isArray(data) ? data : data?.results || [];
-      const mapped = list.map(toUiDestination);
+      // 2. ✅ CRITICAL FIX: Fetch favorites from the separate API
+      const favData = await getFavoriteDestinationsAPI(
+        accessToken,
+        onUnauthorized,
+      );
+      const favList = Array.isArray(favData) ? favData : favData?.results || [];
 
-      setDestinations(mapped);
-      return { ok: true, count: mapped.length };
+      // Map these favorites so they match the structure of our destinations
+      const mappedFavs = favList.map(toUiDestination);
+      setFavorites(mappedFavs);
     } catch (e) {
       setDestinationsError(e.message || "Failed to fetch destinations");
       return { ok: false, message: e.message };
@@ -99,29 +109,102 @@ const DestinationContext = ({ children }) => {
       setFilteredDestinations(destinations);
     } else {
       setFilteredDestinations(
-        destinations.filter((d) => d.category === selectCategory.toLowerCase()),
+        destinations.filter(
+          (d) => d.category.toLowerCase() === selectCategory.toLowerCase(),
+        ),
       );
     }
   }, [destinations, selectCategory]);
 
   // ---- FAVORITES ----
-  const addToFavorites = (destination) => {
-    setFavorites((prev) =>
-      prev.some((f) => f.id === destination.id) ? prev : [...prev, destination],
-    );
+
+  const fetchFavorites = async () => {
+    const gate = tokenGate();
+    if (gate) return;
+
+    try {
+      const data = await getFavoriteDestinationsAPI(
+        accessToken,
+        onUnauthorized,
+      );
+      // Support both array or paginated response
+      const list = Array.isArray(data) ? data : data?.results || [];
+
+      // Map them to your UI shape so the ID comparison works
+      const mappedFavs = list.map(toUiDestination);
+      setFavorites(mappedFavs);
+    } catch (e) {
+      console.log("Error fetching favorites:", e.message);
+    }
   };
 
-  const removeFromFavorites = (destination) => {
-    setFavorites((prev) => prev.filter((fav) => fav.id !== destination.id));
+  // ADD
+  const addToFavorites = async (destination) => {
+    const gate = tokenGate();
+    if (gate) return gate;
+    try {
+      // Backend call
+      await addFavoriteAPI(destination.id, accessToken, onUnauthorized);
+      // Local state update
+      setFavorites((prev) => [...prev, destination]);
+      return { ok: true };
+    } catch (e) {
+      return { ok: false, message: e.message };
+    }
   };
 
-  const isFavorite = (destination) => {
-    return favorites.some((fav) => fav.id === destination.id);
+  const removeFromFavorites = async (destination) => {
+    const gate = tokenGate();
+    if (gate) return gate;
+    try {
+      // Backend call
+      await removeFavoriteAPI(destination.id, accessToken, onUnauthorized);
+      // Local state update
+      setFavorites((prev) =>
+        prev.filter((f) => String(f.id) !== String(destination.id)),
+      );
+      return { ok: true };
+    } catch (e) {
+      return { ok: false, message: e.message };
+    }
   };
 
+  const isFavorite = (id) => {
+    // Ensure both are compared as strings to avoid "4" vs 4 mismatch
+    return favorites.some((f) => String(f.id) === String(id));
+  };
+
+  const toggleFavorite = async (destination) => {
+    const currentlyFav = isFavorite(destination.id);
+
+    if (currentlyFav) {
+      // If it IS a favorite, call REMOVE (DELETE API)
+      setFavorites((prev) =>
+        prev.filter((f) => String(f.id) !== String(destination.id)),
+      );
+      const res = await removeFavoriteAPI(
+        destination.id,
+        accessToken,
+        onUnauthorized,
+      );
+      if (!res.ok) fetchDestinations(); // Rollback on failure
+    } else {
+      // If it IS NOT a favorite, call ADD (POST API)
+      setFavorites((prev) => [...prev, destination]);
+      const res = await addFavoriteAPI(
+        destination.id,
+        accessToken,
+        onUnauthorized,
+      );
+      if (!res.ok) fetchDestinations(); // Rollback on failure
+    }
+  };
   // OPTIONAL: auto fetch when token becomes available
   useEffect(() => {
-    if (accessToken) fetchDestinations();
+    if (accessToken) {
+      fetchDestinations();
+      fetchFavorites();
+    }
   }, [accessToken]);
 
   const value = {
@@ -135,8 +218,8 @@ const DestinationContext = ({ children }) => {
     addToFavorites,
     removeFromFavorites,
     isFavorite,
+    toggleFavorite,
 
-    categories,
     destinationByCategory,
     filteredDestinations,
     selectCategory,

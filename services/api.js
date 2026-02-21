@@ -1,5 +1,10 @@
 const BASE_URL = process.env.EXPO_PUBLIC_API_URL;
 
+export const GENEGRAL_API = {
+  categories: `${BASE_URL}/api/categories/`,
+  avatars: `${BASE_URL}/api/avatar-suggestions/`,
+};
+
 export const USER_API = {
   login: `${BASE_URL}/api/auth/login/`,
   register: `${BASE_URL}/api/auth/register/`,
@@ -11,6 +16,7 @@ export const USER_API = {
 
 export const DESTINATIONS_API = {
   destinations: `${BASE_URL}/api/destinations/`,
+  destinationsFav: `${BASE_URL}/api/auth/favourite-destinations/`,
 };
 
 export const TRIPS_API = {
