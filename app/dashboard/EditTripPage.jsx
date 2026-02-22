@@ -128,20 +128,20 @@ const EditTripPage = () => {
     if (startDate) {
       marks[startDate] = {
         startingDay: true,
-        color: "#0F766E",
+        color: "#064E3B",
         textColor: "#fff",
       };
     }
 
     if (startDate && endDate) {
       const list = getDaysBetween(startDate, endDate);
-      list.forEach((d) => (marks[d] = { color: "#0F766E", textColor: "#fff" }));
+      list.forEach((d) => (marks[d] = { color: "#064E3B", textColor: "#fff" }));
       marks[startDate] = {
         startingDay: true,
-        color: "#0F766E",
+        color: "#064E3B",
         textColor: "#fff",
       };
-      marks[endDate] = { endingDay: true, color: "#0F766E", textColor: "#fff" };
+      marks[endDate] = { endingDay: true, color: "#064E3B", textColor: "#fff" };
     }
     return marks;
   };
@@ -222,7 +222,7 @@ const EditTripPage = () => {
       >
         <Text style={{ fontWeight: "900", fontSize: 16 }}>Trip not found</Text>
         <Pressable style={{ marginTop: 12 }} onPress={() => router.back()}>
-          <Text style={{ color: "#0F766E", fontWeight: "900" }}>Go back</Text>
+          <Text style={{ color: "#064E3B", fontWeight: "900" }}>Go back</Text>
         </Pressable>
       </View>
     );
@@ -246,7 +246,7 @@ const EditTripPage = () => {
             </Text>
 
             <View style={styles.ratePill}>
-              <Ionicons name="star" size={12} color="#0F766E" />
+              <Ionicons name="star" size={12} color="#064E3B" />
               <Text style={styles.rateText}>
                 {typeof place.rating === "number"
                   ? place.rating.toFixed(1)
@@ -266,7 +266,7 @@ const EditTripPage = () => {
 
             {disabled ? (
               <View style={styles.addedPill}>
-                <Ionicons name="checkmark" size={14} color="#0F766E" />
+                <Ionicons name="checkmark" size={14} color="#064E3B" />
                 <Text style={styles.addedPillText}>Added</Text>
               </View>
             ) : (
@@ -324,7 +324,7 @@ const EditTripPage = () => {
             <Text style={styles.sectionTitle}>Dates</Text>
 
             <View style={styles.rangePill}>
-              <Ionicons name="calendar-outline" size={16} color="#0F766E" />
+              <Ionicons name="calendar-outline" size={16} color="#064E3B" />
               <Text style={styles.rangeText}>
                 {prettyRange(startDate, endDate)}
               </Text>
@@ -342,13 +342,13 @@ const EditTripPage = () => {
     markedDates={markedDates()}
     minDate={TODAY} // 👈 This line disables past dates
     theme={{
-      todayTextColor: "#0F766E",
-      arrowColor: "#0F766E",
+      todayTextColor: "#064E3B",
+      arrowColor: "#064E3B",
       monthTextColor: "#0F172A",
       textSectionTitleColor: "#64748B",
       dayTextColor: "#0F172A",
       textDisabledColor: "#CBD5E1", // Color for the disabled past dates
-      dotColor: "#0F766E",
+      dotColor: "#064E3B",
     }}
   />
           </View>
@@ -584,8 +584,8 @@ const styles = StyleSheet.create({
     justifyContent: "center",
   },
 
-  title: { fontSize: 26, fontWeight: "900", color: "#0F172A" },
-  subtitle: { marginTop: 2, fontSize: 13, fontWeight: "600", color: "#64748B" },
+  title: { fontSize: 32, fontWeight: "900", color: "#064E3B" },
+  subtitle: { marginTop: -2, fontSize: 15, fontWeight: "600", color: "#4B5563" },
 
   section: { paddingHorizontal: 16, marginTop: 14 },
   sectionTitle: { fontSize: 16, fontWeight: "900", color: "#0F172A" },
@@ -631,7 +631,7 @@ const styles = StyleSheet.create({
 
   rangeText: {
     flexShrink: 1,
-    color: "#0F766E",
+    color: "#064E3B",
     fontWeight: "900",
     fontSize: 12.5,
   },
@@ -777,7 +777,7 @@ const styles = StyleSheet.create({
     paddingVertical: 6,
     borderRadius: 999,
   },
-  rateText: { color: "#0F766E", fontWeight: "900", fontSize: 12 },
+  rateText: { color: "#064E3B", fontWeight: "900", fontSize: 12 },
 
   catPill: {
     backgroundColor: "#F1F5F9",
@@ -798,7 +798,7 @@ const styles = StyleSheet.create({
     width: 34,
     height: 34,
     borderRadius: 999,
-    backgroundColor: "#0F766E",
+    backgroundColor: "#064E3B",
     alignItems: "center",
     justifyContent: "center",
   },
@@ -815,7 +815,7 @@ const styles = StyleSheet.create({
     borderColor: "#A7F3D0",
   },
 
-  addedPillText: { color: "#0F766E", fontWeight: "900", fontSize: 12 },
+  addedPillText: { color: "#064E3B", fontWeight: "900", fontSize: 12 },
 
   addedCard: {
     flexDirection: "row",
@@ -857,7 +857,7 @@ const styles = StyleSheet.create({
   saveBtn: {
     height: 52,
     borderRadius: 16,
-    backgroundColor: "#0F766E",
+    backgroundColor: "#064E3B",
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "center",

@@ -93,7 +93,7 @@ const MapPage = () => {
             style={styles.secondaryBtn}
             onPress={focusDestination}
           >
-            <Ionicons name="locate-outline" size={18} color="#0F766E" />
+            <Ionicons name="locate-outline" size={18} color="#064E3B" />
             <Text style={styles.secondaryText}>Focus</Text>
           </TouchableOpacity>
 
@@ -173,13 +173,13 @@ const styles = StyleSheet.create({
     alignItems: "center",
     gap: 6,
     borderWidth: 1.5,
-    borderColor: "#0F766E",
+    borderColor: "#064E3B",
     borderRadius: 14,
     paddingVertical: 12,
   },
 
   secondaryText: {
-    color: "#0F766E",
+    color: "#064E3B",
     fontWeight: "800",
   },
 
@@ -189,7 +189,7 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     alignItems: "center",
     gap: 6,
-    backgroundColor: "#0F766E",
+    backgroundColor: "#064E3B",
     borderRadius: 14,
     paddingVertical: 12,
   },

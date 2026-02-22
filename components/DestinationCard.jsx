@@ -25,7 +25,7 @@ const DestinationCard = ({ destination, variant = "large" }) => {
       <View style={styles.imageWrap}>
         <Image source={{ uri: destination.imageUrl }} style={styles.image} />
 
-        {/* Favorite */}
+        {/* Favorite - Clean Circle Style */}
         <Pressable
           onPress={() => toggleFavorite(destination)}
           style={styles.favBtn}
@@ -33,13 +33,13 @@ const DestinationCard = ({ destination, variant = "large" }) => {
           <Ionicons
             name={fav ? "heart" : "heart-outline"}
             size={18}
-            color={fav ? "#E11D48" : "#0F172A"}
+            color={fav ? "#E11D48" : "#064E3B"}
           />
         </Pressable>
 
         {/* Rating pill */}
         <View style={styles.ratingPill}>
-          <Ionicons name="star" size={14} color="#0F766E" />
+          <Ionicons name="star" size={14} color="#064E3B" />
           <Text style={styles.ratingText}>{destination.rating}</Text>
         </View>
       </View>
@@ -62,23 +62,23 @@ export default DestinationCard;
 const styles = StyleSheet.create({
   card: {
     width: 240,
-    borderRadius: 18,
+    borderRadius: 20, // Restored original radius
     backgroundColor: "#FFFFFF",
-    borderWidth: 1,
-    borderColor: "#E2E8F0",
+    borderWidth: 1.5,
+    borderColor: "#F1F5F9",
     overflow: "hidden",
-    shadowColor: "#000",
-    shadowOpacity: 0.06,
-    shadowRadius: 12,
-    shadowOffset: { width: 0, height: 6 },
-    elevation: 2,
+    shadowColor: "#064E3B",
+    shadowOpacity: 0.08,
+    shadowRadius: 15,
+    shadowOffset: { width: 0, height: 8 },
+    elevation: 3,
   },
   cardCompact: {
     width: 200,
   },
 
   imageWrap: {
-    height: 150,
+    height: 160,
     backgroundColor: "#F1F5F9",
   },
   image: {
@@ -88,51 +88,193 @@ const styles = StyleSheet.create({
 
   favBtn: {
     position: "absolute",
-    top: 10,
-    right: 10,
-    height: 34,
-    width: 34,
-    borderRadius: 999,
-    backgroundColor: "rgba(255,255,255,0.92)",
+    top: 12,
+    right: 12,
+    height: 36,
+    width: 36,
+    borderRadius: 18, // Perfect Circle
+    backgroundColor: "rgba(255,255,255,0.95)",
     alignItems: "center",
     justifyContent: "center",
-    borderWidth: 1,
-    borderColor: "rgba(226,232,240,0.9)",
+    // Removed the problematic border that caused the square look
+    borderWidth: 0, 
+    elevation: 4,
+    shadowColor: "#000",
+    shadowOpacity: 0.15,
+    shadowRadius: 5,
+    shadowOffset: { width: 0, height: 2 },
   },
 
   ratingPill: {
     position: "absolute",
-    left: 10,
-    bottom: 10,
+    left: 12,
+    bottom: 12,
     flexDirection: "row",
     alignItems: "center",
-    gap: 6,
+    gap: 4,
     paddingHorizontal: 10,
-    paddingVertical: 6,
-    borderRadius: 999,
-    backgroundColor: "rgba(255,255,255,0.92)",
-    borderWidth: 1,
-    borderColor: "rgba(226,232,240,0.9)",
+    paddingVertical: 5,
+    borderRadius: 12,
+    backgroundColor: "rgba(255,255,255,0.95)",
   },
   ratingText: {
     fontWeight: "900",
-    color: "#0F172A",
-    fontSize: 12,
+    color: "#064E3B",
+    fontSize: 13,
   },
 
   body: {
-    padding: 12,
-    gap: 6,
+    padding: 14,
+    gap: 4,
   },
   name: {
-    fontSize: 15,
+    fontSize: 17,
     fontWeight: "900",
-    color: "#0F172A",
+    color: "#064E3B",
   },
   desc: {
-    fontSize: 12.5,
-    color: "#64748B",
+    fontSize: 13,
+    color: "#4B5563",
     fontWeight: "600",
-    lineHeight: 17,
+    lineHeight: 18,
   },
 });
+
+// import { Ionicons } from "@expo/vector-icons";
+// import { router } from "expo-router";
+// import { Image, StyleSheet, Text, TouchableOpacity, View, Pressable } from "react-native";
+// import { useDestinationContext } from "../contexts/DestinationContext";
+
+// const DestinationCard = ({ destination, variant = "large" }) => {
+//   const { addToFavorites, removeFromFavorites, isFavorite, toggleFavorite } =
+//     useDestinationContext();
+//   const fav = isFavorite(destination.id);
+
+//   const directToDetails = () => {
+//     router.push({
+//       pathname: "dashboard/DetailsPage",
+//       params: { id: destination.id }, // Pass only the ID
+//     });
+//   };
+
+//   return (
+//     <TouchableOpacity
+//       onPress={directToDetails}
+//       activeOpacity={0.9}
+//       style={[styles.card, variant === "compact" && styles.cardCompact]}
+//     >
+//       {/* Image */}
+//       <View style={styles.imageWrap}>
+//         <Image source={{ uri: destination.imageUrl }} style={styles.image} />
+
+//         {/* Favorite */}
+//         <Pressable
+//           onPress={() => toggleFavorite(destination)}
+//           style={styles.favBtn}
+//         >
+//           <Ionicons
+//             name={fav ? "heart" : "heart-outline"}
+//             size={18}
+//             color={fav ? "#E11D48" : "#0F172A"}
+//           />
+//         </Pressable>
+
+//         {/* Rating pill */}
+//         <View style={styles.ratingPill}>
+//           <Ionicons name="star" size={14} color="#0F766E" />
+//           <Text style={styles.ratingText}>{destination.rating}</Text>
+//         </View>
+//       </View>
+
+//       {/* Text */}
+//       <View style={styles.body}>
+//         <Text numberOfLines={1} style={styles.name}>
+//           {destination.name}
+//         </Text>
+//         <Text numberOfLines={2} style={styles.desc}>
+//           {destination.shortDescription}
+//         </Text>
+//       </View>
+//     </TouchableOpacity>
+//   );
+// };
+
+// export default DestinationCard;
+
+// const styles = StyleSheet.create({
+//   card: {
+//     width: 240,
+//     borderRadius: 18,
+//     backgroundColor: "#FFFFFF",
+//     borderWidth: 1,
+//     borderColor: "#E2E8F0",
+//     overflow: "hidden",
+//     shadowColor: "#000",
+//     shadowOpacity: 0.06,
+//     shadowRadius: 12,
+//     shadowOffset: { width: 0, height: 6 },
+//     elevation: 2,
+//   },
+//   cardCompact: {
+//     width: 200,
+//   },
+
+//   imageWrap: {
+//     height: 150,
+//     backgroundColor: "#F1F5F9",
+//   },
+//   image: {
+//     width: "100%",
+//     height: "100%",
+//   },
+
+//   favBtn: {
+//     position: "absolute",
+//     top: 10,
+//     right: 10,
+//     height: 34,
+//     width: 34,
+//     borderRadius: 999,
+//     backgroundColor: "rgba(255,255,255,0.92)",
+//     alignItems: "center",
+//     justifyContent: "center",
+//     borderWidth: 1,
+//     borderColor: "rgba(226,232,240,0.9)",
+//   },
+
+//   ratingPill: {
+//     position: "absolute",
+//     left: 10,
+//     bottom: 10,
+//     flexDirection: "row",
+//     alignItems: "center",
+//     gap: 6,
+//     paddingHorizontal: 10,
+//     paddingVertical: 6,
+//     borderRadius: 999,
+//     backgroundColor: "rgba(255,255,255,0.92)",
+//     borderWidth: 1,
+//     borderColor: "rgba(226,232,240,0.9)",
+//   },
+//   ratingText: {
+//     fontWeight: "900",
+//     color: "#0F172A",
+//     fontSize: 12,
+//   },
+
+//   body: {
+//     padding: 12,
+//     gap: 6,
+//   },
+//   name: {
+//     fontSize: 15,
+//     fontWeight: "900",
+//     color: "#0F172A",
+//   },
+//   desc: {
+//     fontSize: 12.5,
+//     color: "#64748B",
+//     fontWeight: "600",
+//     lineHeight: 17,
+//   },
+// });

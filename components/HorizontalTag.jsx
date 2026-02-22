@@ -93,7 +93,6 @@ import { StyleSheet, Text, TouchableOpacity, View } from "react-native";
 import { useDestinationContext } from "../contexts/DestinationContext";
 
 const HorizontalTag = ({ list, selected }) => {
-  // Extract both name and icon_url from the list object
   const { name, icon_url } = list;
   const { destinationByCategory } = useDestinationContext();
 
@@ -102,17 +101,21 @@ const HorizontalTag = ({ list, selected }) => {
       activeOpacity={0.85}
       onPress={() => destinationByCategory(name)}
     >
-      <View style={[styles.chip, selected && styles.chipSelected]}>
-        <View style={[styles.iconWrap, selected && styles.iconWrapSelected]}>
-          <Ionicons
-            /* Use the icon_url from API. 
-               Fallback to 'pricetag-outline' if the API value is missing. 
-            */
-            name={icon_url || "pricetag-outline"}
-            size={16}
-            color={selected ? "#0F766E" : "#64748B"}
-          />
-        </View>
+      <View style={[
+        styles.chip, 
+        selected && styles.chipSelected,
+        !icon_url && { paddingHorizontal: 16 } // Add extra padding if no icon
+      ]}>
+        {/* Only render the icon wrapper if icon_url is present */}
+        {icon_url && (
+          <View style={[styles.iconWrap, selected && styles.iconWrapSelected]}>
+            <Ionicons
+              name={icon_url}
+              size={16}
+              color={selected ? "#0F766E" : "#64748B"}
+            />
+          </View>
+        )}
 
         <Text style={[styles.text, selected && styles.textSelected]}>
           {name}
@@ -124,11 +127,11 @@ const HorizontalTag = ({ list, selected }) => {
 
 export default HorizontalTag;
 
-// Styles remain exactly the same as your original code
 const styles = StyleSheet.create({
   chip: {
     flexDirection: "row",
     alignItems: "center",
+    // Gap only applies if there are two elements
     gap: 8,
     paddingHorizontal: 12,
     paddingVertical: 10,

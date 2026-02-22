@@ -96,6 +96,7 @@ const GeneralContext = ({ children }) => {
         ...list.map((c) => ({
           id: c.id,
           name: c.name ?? c.title ?? "Unknown",
+          icon_url: c.icon_url,
         })),
       ];
 
