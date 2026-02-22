@@ -15,14 +15,20 @@ import HorizontalTag from "../../components/HorizontalTag";
 import { useDestinationContext } from "../../contexts/DestinationContext";
 import { useGeneralContext } from "../../contexts/GeneralContext";
 import { useUserContext } from "../../contexts/UserContext";
+import FeaturedCard from "../../components/FeaturedCard";
 
 const CARD_WIDTH = 230;
 
 const Destinations = () => {
   const { user } = useUserContext();
 
-  const { destinations, filteredDestinations, selectCategory } =
-    useDestinationContext();
+  const { 
+    destinations, 
+    filteredDestinations, 
+    selectCategory, 
+    featuredDestination, 
+    featuredData 
+  } = useDestinationContext();
   const { categories } = useGeneralContext();
 
   const goToSearch = (query = "") => {
@@ -36,16 +42,17 @@ const Destinations = () => {
     router.push("/tabs/Profile");
   };
 
+  const openFeatured = () => {
+  if (!featuredDestination) return;
+  router.push({
+    pathname: "/dashboard/DetailsPage",
+    params: { id: featuredDestination.id },
+  });
+};
+
   // ✅ Feature the first destination (or any logic you want later)
   const featured = destinations?.[0];
 
-  const openFeatured = () => {
-    if (!featured) return;
-    router.push({
-      pathname: "/dashboard/DetailsPage",
-      params: { destination: JSON.stringify(featured) },
-    });
-  };
 
   return (
     <ScrollView>
@@ -69,11 +76,7 @@ const Destinations = () => {
                   style={{ width: 34, height: 34, borderRadius: 17 }}
                 />
               ) : (
-                <Ionicons
-                  name="person-circle-outline"
-                  size={30}
-                  color="#0F766E"
-                />
+                <Image source={require("../../assets/images/ProfPic.png")} style={{ width: 34, height: 34, borderRadius: 17 }} />
               )}
             </TouchableOpacity>
           </View>
@@ -90,31 +93,14 @@ const Destinations = () => {
         </TouchableOpacity>
 
         {/* FEATURED HERO CARD */}
-        {featured && (
-          <TouchableOpacity
-            activeOpacity={0.9}
-            style={styles.featureWrap}
-            onPress={openFeatured}
-          >
-            <ImageBackground
-              source={{ uri: featured.imageUrl }}
-              style={styles.featureImage}
-              imageStyle={styles.featureImgRadius}
-            >
-              <View style={styles.featureOverlay} />
-              <View style={styles.featureContent}>
-                <View style={styles.badge}>
-                  <Ionicons name="sparkles-outline" size={14} color="#0F766E" />
-                  <Text style={styles.badgeText}>Featured</Text>
-                </View>
-
-                <Text style={styles.featureTitle}>{featured.name}</Text>
-                <Text style={styles.featureSubtitle} numberOfLines={1}>
-                  Tap to see details
-                </Text>
-              </View>
-            </ImageBackground>
-          </TouchableOpacity>
+{featuredDestination ? (
+          <FeaturedCard 
+            destination={featuredDestination} 
+            featuredData={featuredData} 
+            onPress={openFeatured} 
+          />
+        ) : (
+          <View style={[styles.featureWrap, { height: 170, backgroundColor: '#F1F5F9', borderRadius: 20 }]} />
         )}
 
         {/* POPULAR */}
@@ -128,7 +114,7 @@ const Destinations = () => {
             data={destinations}
             horizontal
             showsHorizontalScrollIndicator={false}
-            keyExtractor={(item) => String(item.id)}
+            keyExtractor={(item, index) => item.id ? String(item.id) : `item-${index}`}
             contentContainerStyle={styles.hListContent}
             renderItem={({ item }) => (
               <DestinationCard destination={item} width={CARD_WIDTH} />

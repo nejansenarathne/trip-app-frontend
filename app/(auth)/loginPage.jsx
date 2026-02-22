@@ -69,6 +69,10 @@ const LoginPage = () => {
     run();
   }, [response]);
 
+const loginWithGoogle = () => {
+  setError("This feature will be availble soon.");
+};
+
   const loginSubmit = async () => {
     if (loading) return;
 
@@ -204,7 +208,7 @@ const LoginPage = () => {
         <TouchableOpacity
           activeOpacity={0.85}
           style={[styles.googleBtn, (!request || loading) && { opacity: 0.6 }]}
-          onPress={() => promptAsync()}
+          onPress={loginWithGoogle}
           disabled={!request || loading}
         >
           <Image source={googleIcon} style={styles.googleIcon} />

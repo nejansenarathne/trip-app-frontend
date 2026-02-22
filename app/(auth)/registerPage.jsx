@@ -113,6 +113,10 @@ const RegisterPage = () => {
     }
   };
 
+  const loginWithGoogle = () => {
+  setError("This feature will be availble soon.");
+};
+
   return (
     <KeyboardAvoidingView
       style={styles.container}
@@ -242,7 +246,7 @@ const RegisterPage = () => {
         <TouchableOpacity
           activeOpacity={0.85}
           style={[styles.googleBtn, (!request || loading) && { opacity: 0.6 }]}
-          onPress={() => promptAsync()}
+          onPress={loginWithGoogle}
           disabled={!request || loading}
         >
           <Image source={googleIcon} style={styles.googleIcon} />

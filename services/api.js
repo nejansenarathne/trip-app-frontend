@@ -17,6 +17,7 @@ export const USER_API = {
 export const DESTINATIONS_API = {
   destinations: `${BASE_URL}/api/destinations/`,
   destinationsFav: `${BASE_URL}/api/auth/favourite-destinations/`,
+  destinationFeatured: `${BASE_URL}/api/featured-destination/`,
 };
 
 export const TRIPS_API = {

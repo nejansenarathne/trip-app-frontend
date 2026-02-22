@@ -1,6 +1,7 @@
 import { DESTINATIONS_API } from "./api";
 import { apiRequest } from "./apiClient";
 
+//---getting destinations
 export const getDestinationsAPI = (token, onUnauthorized) =>
   apiRequest(DESTINATIONS_API.destinations, {
     method: "GET",
@@ -8,8 +9,8 @@ export const getDestinationsAPI = (token, onUnauthorized) =>
     onUnauthorized,
   });
 
-// Add this to your destinationService.js
 
+//---for favorite destinations
 export const getFavoriteDestinationsAPI = (token, onUnauthorized) =>
   apiRequest(DESTINATIONS_API.destinationsFav, {
     method: "GET",
@@ -44,4 +45,16 @@ export const removeFavoriteAPI = (destinationId, token, onUnauthorized) =>
     body: JSON.stringify({
       destination_id: String(destinationId),
     }),
+  });
+
+  
+//---foe getting featured destination
+export const getFeaturedDestinationAPI = (token, onUnauthorized) =>
+  apiRequest(DESTINATIONS_API.destinationFeatured, {
+    method: "GET",
+    token,
+    onUnauthorized,
+    headers: {
+      "Content-Type": "application/json",
+    },
   });

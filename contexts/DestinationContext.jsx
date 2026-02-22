@@ -5,6 +5,7 @@ import {
   getDestinationsAPI,
   getFavoriteDestinationsAPI,
   removeFavoriteAPI,
+  getFeaturedDestinationAPI
 } from "../services/destinationService";
 
 import { useUserContext } from "./UserContext";
@@ -24,6 +25,10 @@ const DestinationContext = ({ children }) => {
 
   // favorites
   const [favorites, setFavorites] = useState([]);
+
+  //featured section 
+  const [featuredData, setFeaturedData] = useState(null);
+const [featuredDestination, setFeaturedDestination] = useState(null);
 
   const [selectCategory, setSelectCategory] = useState("All");
   const [filteredDestinations, setFilteredDestinations] = useState([]);
@@ -48,7 +53,7 @@ const DestinationContext = ({ children }) => {
     name: d.name ?? d.title ?? "Unknown",
     shortDescription: d.shortDescription ?? d.short_description ?? "",
     longDescription: d.longDescription ?? d.long_description ?? "",
-    imageUrl: d.imageUrl ?? d.image_url ?? d.image ?? "",
+    imageUrl: d.image_url || d.imageUrl || d.image || "https://via.placeholder.com/150",
     rating: typeof d.rating === "number" ? d.rating : Number(d.rating || 0),
     location: {
       latitude: Number(d.latitude ?? d.location?.latitude ?? 0),
@@ -61,42 +66,96 @@ const DestinationContext = ({ children }) => {
   });
 
   // ---- FETCH from API ----
-  const fetchDestinations = async () => {
-    const gate = tokenGate();
-    if (gate) {
-      setDestinationsError(gate.message);
-      return gate;
+// const fetchDestinations = async () => {
+//   const gate = tokenGate();
+//   if (gate) return;
+
+//   setLoadingDestinations(true);
+//   try {
+//     // 1. Fetch All Destinations
+//     const destData = await getDestinationsAPI(accessToken, onUnauthorized);
+//     const destList = Array.isArray(destData) ? destData : destData?.results || [];
+//     const mappedDestinations = destList.map(toUiDestination);
+    
+//     // Set destinations first
+//     setDestinations(mappedDestinations);
+
+//     // 2. Fetch Favorites
+//     const favData = await getFavoriteDestinationsAPI(accessToken, onUnauthorized);
+//     const favIdList = Array.isArray(favData) ? favData : favData?.results || [];
+    
+//     // Extract IDs from backend format: [{"destination_id": 4}, ...]
+//     const favIds = favIdList.map(item => String(item.destination_id));
+
+//     // 3. Match them against the NEWLY mapped destinations
+//     // We use mappedDestinations here instead of the state 'destinations' 
+//     // because state hasn't updated yet in this render cycle.
+//     const fullFavObjects = mappedDestinations.filter(d => 
+//       favIds.includes(String(d.id))
+//     );
+
+//     setFavorites(fullFavObjects);
+//   } catch (e) {
+//     setDestinationsError(e.message);
+//   } finally {
+//     setLoadingDestinations(false);
+//   }
+// };
+const fetchDestinations = async () => {
+  const gate = tokenGate();
+  if (gate) {
+    setDestinationsError(gate.message);
+    return gate;
+  }
+
+  setLoadingDestinations(true);
+  try {
+    // 1. Fetch All Destinations
+    const destData = await getDestinationsAPI(accessToken, onUnauthorized);
+    const destList = Array.isArray(destData) ? destData : destData?.results || [];
+    const mappedDestinations = destList.map(toUiDestination);
+    
+    // Set main list immediately
+    setDestinations(mappedDestinations);
+
+    // 2. Fetch Featured Data
+    const fData = await getFeaturedDestinationAPI(accessToken, onUnauthorized);
+    
+    if (fData) {
+      // If the API returns an array, take the first item
+      const actualFeaturedData = Array.isArray(fData) ? fData[0] : fData;
+      setFeaturedData(actualFeaturedData);
+
+      // CRITICAL: Robust ID matching (String to String)
+      const targetId = String(actualFeaturedData.destination_id);
+      const found = mappedDestinations.find(d => String(d.id) === targetId);
+
+      if (found) {
+        setFeaturedDestination(found);
+        console.log("✅ Featured Destination Matched:", found.name);
+      } else {
+        console.warn("⚠️ Featured ID not found in destination list. ID:", targetId);
+      }
     }
 
-    setLoadingDestinations(true);
-    setDestinationsError("");
+    // 3. Fetch Favorites
+    const favData = await getFavoriteDestinationsAPI(accessToken, onUnauthorized);
+    const favIdList = Array.isArray(favData) ? favData : favData?.results || [];
+    
+    // Extract IDs from backend format: [{"destination_id": 4}, ...]
+    const favIds = favIdList.map(item => String(item.destination_id));
 
-    try {
-      // 1. Fetch all destinations
-      const destData = await getDestinationsAPI(accessToken, onUnauthorized);
-      const destList = Array.isArray(destData)
-        ? destData
-        : destData?.results || [];
-      const mappedDestinations = destList.map(toUiDestination);
-      setDestinations(mappedDestinations);
+    // Match them against our mapped list
+    const fullFavs = mappedDestinations.filter(d => favIds.includes(String(d.id)));
+    setFavorites(fullFavs);
 
-      // 2. ✅ CRITICAL FIX: Fetch favorites from the separate API
-      const favData = await getFavoriteDestinationsAPI(
-        accessToken,
-        onUnauthorized,
-      );
-      const favList = Array.isArray(favData) ? favData : favData?.results || [];
-
-      // Map these favorites so they match the structure of our destinations
-      const mappedFavs = favList.map(toUiDestination);
-      setFavorites(mappedFavs);
-    } catch (e) {
-      setDestinationsError(e.message || "Failed to fetch destinations");
-      return { ok: false, message: e.message };
-    } finally {
-      setLoadingDestinations(false);
-    }
-  };
+  } catch (e) {
+    console.error("❌ Fetch Error:", e.message);
+    setDestinationsError(e.message);
+  } finally {
+    setLoadingDestinations(false);
+  }
+};
 
   // ---- FILTERING ----
   const destinationByCategory = (category) => {
@@ -116,89 +175,84 @@ const DestinationContext = ({ children }) => {
     }
   }, [destinations, selectCategory]);
 
+
+
   // ---- FAVORITES ----
+const fetchFavorites = async () => {
+  const gate = tokenGate();
+  if (gate) return;
 
-  const fetchFavorites = async () => {
-    const gate = tokenGate();
-    if (gate) return;
+  try {
+    const data = await getFavoriteDestinationsAPI(accessToken, onUnauthorized);
+    const favIdList = Array.isArray(data) ? data : data?.results || [];
 
-    try {
-      const data = await getFavoriteDestinationsAPI(
-        accessToken,
-        onUnauthorized,
-      );
-      // Support both array or paginated response
-      const list = Array.isArray(data) ? data : data?.results || [];
+    // CRITICAL: Extract the IDs correctly from your API response format
+    const favIds = favIdList.map(item => String(item.destination_id));
 
-      // Map them to your UI shape so the ID comparison works
-      const mappedFavs = list.map(toUiDestination);
-      setFavorites(mappedFavs);
-    } catch (e) {
-      console.log("Error fetching favorites:", e.message);
-    }
-  };
+    // Map those IDs back to the full destination objects already in state
+    const fullFavObjects = destinations.filter(d => 
+      favIds.includes(String(d.id))
+    );
 
-  // ADD
-  const addToFavorites = async (destination) => {
-    const gate = tokenGate();
-    if (gate) return gate;
-    try {
-      // Backend call
-      await addFavoriteAPI(destination.id, accessToken, onUnauthorized);
-      // Local state update
-      setFavorites((prev) => [...prev, destination]);
-      return { ok: true };
-    } catch (e) {
-      return { ok: false, message: e.message };
-    }
-  };
+    setFavorites(fullFavObjects); 
+  } catch (e) {
+    console.log("Error fetching favorites:", e.message);
+  }
+};
 
-  const removeFromFavorites = async (destination) => {
-    const gate = tokenGate();
-    if (gate) return gate;
-    try {
-      // Backend call
-      await removeFavoriteAPI(destination.id, accessToken, onUnauthorized);
-      // Local state update
-      setFavorites((prev) =>
-        prev.filter((f) => String(f.id) !== String(destination.id)),
-      );
-      return { ok: true };
-    } catch (e) {
-      return { ok: false, message: e.message };
-    }
-  };
 
-  const isFavorite = (id) => {
-    // Ensure both are compared as strings to avoid "4" vs 4 mismatch
-    return favorites.some((f) => String(f.id) === String(id));
-  };
+const addToFavorites = async (destination) => {
+  const gate = tokenGate();
+  if (gate) return gate;
+  try {
+    const destId = String(destination.id);
+    await addFavoriteAPI(destId, accessToken, onUnauthorized);
+    // Add the ID to state
+    setFavorites((prev) => [...prev, destId]);
+    return { ok: true };
+  } catch (e) {
+    return { ok: false, message: e.message };
+  }
+};
 
-  const toggleFavorite = async (destination) => {
-    const currentlyFav = isFavorite(destination.id);
+const removeFromFavorites = async (destination) => {
+  const destId = String(destination.id);
 
-    if (currentlyFav) {
-      // If it IS a favorite, call REMOVE (DELETE API)
-      setFavorites((prev) =>
-        prev.filter((f) => String(f.id) !== String(destination.id)),
-      );
-      const res = await removeFavoriteAPI(
-        destination.id,
-        accessToken,
-        onUnauthorized,
-      );
-      if (!res.ok) fetchDestinations(); // Rollback on failure
-    } else {
-      // If it IS NOT a favorite, call ADD (POST API)
-      setFavorites((prev) => [...prev, destination]);
-      const res = await addFavoriteAPI(
-        destination.id,
-        accessToken,
-        onUnauthorized,
-      );
-      if (!res.ok) fetchDestinations(); // Rollback on failure
-    }
-  };
+  // 1. Update UI Instantly
+  setFavorites((prev) => prev.filter((f) => String(f.id) !== destId));
+
+  try {
+    // 2. Run API in background
+    await removeFavoriteAPI(destId, accessToken, onUnauthorized);
+  } catch (e) {
+    console.log("Delete failed, rolling back...");
+    // 3. Optional: Rollback only if API fails
+    fetchFavorites(); 
+  }
+};
+
+const isFavorite = (id) => {
+  return favorites.some((f) => String(f.id) === String(id));
+};
+
+const toggleFavorite = async (destination) => {
+  const currentlyFav = isFavorite(destination.id);
+
+  if (currentlyFav) {
+    // Optimistic UI update: Remove immediately
+    setFavorites((prev) => prev.filter((f) => String(f.id) !== String(destination.id)));
+    
+    const res = await removeFavoriteAPI(destination.id, accessToken, onUnauthorized);
+    if (!res.ok) fetchFavorites(); // Rollback if API fails
+  } else {
+    // Optimistic UI update: Add immediately
+    setFavorites((prev) => [...prev, destination]);
+    
+    const res = await addFavoriteAPI(destination.id, accessToken, onUnauthorized);
+    if (!res.ok) fetchFavorites(); // Rollback if API fails
+  }
+};
+
   // OPTIONAL: auto fetch when token becomes available
   useEffect(() => {
     if (accessToken) {
@@ -223,6 +277,9 @@ const DestinationContext = ({ children }) => {
     destinationByCategory,
     filteredDestinations,
     selectCategory,
+
+    featuredDestination, 
+  featuredData,
   };
 
   return (

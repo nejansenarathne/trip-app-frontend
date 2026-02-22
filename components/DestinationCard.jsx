@@ -1,6 +1,6 @@
 import { Ionicons } from "@expo/vector-icons";
 import { router } from "expo-router";
-import { Image, StyleSheet, Text, TouchableOpacity, View } from "react-native";
+import { Image, StyleSheet, Text, TouchableOpacity, View, Pressable } from "react-native";
 import { useDestinationContext } from "../contexts/DestinationContext";
 
 const DestinationCard = ({ destination, variant = "large" }) => {
@@ -26,10 +26,8 @@ const DestinationCard = ({ destination, variant = "large" }) => {
         <Image source={{ uri: destination.imageUrl }} style={styles.image} />
 
         {/* Favorite */}
-        {/* <Pressable
-          onPress={() =>
-            fav ? removeFromFavorites(destination) : addToFavorites(destination)
-          }
+        <Pressable
+          onPress={() => toggleFavorite(destination)}
           style={styles.favBtn}
         >
           <Ionicons
@@ -37,17 +35,7 @@ const DestinationCard = ({ destination, variant = "large" }) => {
             size={18}
             color={fav ? "#E11D48" : "#0F172A"}
           />
-        </Pressable> */}
-        <TouchableOpacity
-          onPress={() => toggleFavorite(destination)}
-          style={styles.favBtn} // Ensure you use your style here
-        >
-          <Ionicons
-            name={fav ? "heart" : "heart-outline"}
-            size={24}
-            color={fav ? "#E11D48" : "#0F766E"}
-          />
-        </TouchableOpacity>
+        </Pressable>
 
         {/* Rating pill */}
         <View style={styles.ratingPill}>

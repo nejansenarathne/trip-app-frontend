@@ -230,6 +230,7 @@ const EditTripPage = () => {
 
   /* ---------------- UI cards ---------------- */
   const PlacePickCard = ({ place, disabled = false, onAdd }) => {
+    
     return (
       <Pressable
         onPress={onAdd}
@@ -278,6 +279,7 @@ const EditTripPage = () => {
       </Pressable>
     );
   };
+  const TODAY = new Date().toISOString().split('T')[0];
 
   return (
     <View style={styles.container}>
@@ -335,18 +337,20 @@ const EditTripPage = () => {
 
           <View style={styles.calendarCard}>
             <Calendar
-              onDayPress={onPickDate}
-              markingType="period"
-              markedDates={markedDates()}
-              theme={{
-                todayTextColor: "#0F766E",
-                arrowColor: "#0F766E",
-                monthTextColor: "#0F172A",
-                textSectionTitleColor: "#64748B",
-                dayTextColor: "#0F172A",
-                textDisabledColor: "#CBD5E1",
-              }}
-            />
+    onDayPress={onPickDate}
+    markingType="period"
+    markedDates={markedDates()}
+    minDate={TODAY} // 👈 This line disables past dates
+    theme={{
+      todayTextColor: "#0F766E",
+      arrowColor: "#0F766E",
+      monthTextColor: "#0F172A",
+      textSectionTitleColor: "#64748B",
+      dayTextColor: "#0F172A",
+      textDisabledColor: "#CBD5E1", // Color for the disabled past dates
+      dotColor: "#0F766E",
+    }}
+  />
           </View>
         </View>
 
